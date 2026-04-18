@@ -13,6 +13,6 @@ linksection(".init_array") = &mod_main;
 
 export fn JNI_OnLoad(vm: *anyopaque, _: *anyopaque) callconv(.c) i32 {
   _ = vm;
-  _ = __android_log_print(ANDROID_LOG_INFO, LIB_TAG, "JNI OnLoad");
+  // _ = __android_log_print(ANDROID_LOG_INFO, LIB_TAG, "JNI OnLoad");
   return 0x00010006;
 }
