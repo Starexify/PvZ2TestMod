@@ -1,0 +1,4 @@
+[submodule "libs/android-inline-hook"]
+	path = libs/android-inline-hook
+	url = https://github.com/bytedance/android-inline-hook
+	branch = main
