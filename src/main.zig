@@ -1,9 +1,8 @@
 const std = @import("std");
 const log = @import("log.zig");
 const c = @cImport({
-  @cInclude("stdint.h");
+  @cInclude("shadowhook.h");
   @cInclude("And64InlineHook.hpp");
-  @cInclude("dlfcn.h");
 });
 
 pub const LIB_TAG = "PVZ2_MOD";
@@ -20,51 +19,46 @@ fn doStateChangeHook(param1: usize,param2: u32,p3: u64, p4: u64, p5: u64, p6: u6
   }
 }
 
-export fn mod_main() callconv(.c) void {}
+export fn mod_main() callconv(.c) void {
+  log.info("Initialized Mod: {s}", .{LIB_TAG});
+
+  // Get the library
+  const handle = c.shadowhook_dlopen("libPVZ2.so");
+  _ = c.dl_iterate_phdr(dl_callback, null);
+  if (handle != null) c.shadowhook_dlclose(handle);
+
+  if (pvz2_base != 0) {
+    const targetAddr = pvz2_base + 0x0171d9fc;
+    log.info("FOUND LIB! Base: 0x{X}", .{pvz2_base});
+    log.info("Hooking Target: 0x{X}", .{targetAddr});
+    c.A64HookFunction(
+      @ptrFromInt(targetAddr),
+      @constCast(@ptrCast(&doStateChangeHook)),
+      @ptrCast(&originalDoStateChange),
+    );
+    log.info("And64InlineHook applied to target!", .{});
+  } else {
+    log.err("Could not locate libPVZ2.so base address.", .{});
+  }
+}
 export const initArrayPtr: *const fn () callconv(.c) void linksection(".init_array") = &mod_main;
+
+var pvz2_base: usize = 0;
+fn dl_callback(info: [*c]const c.struct_dl_phdr_info, _: usize, _: ?*anyopaque) callconv(.c) i32 {
+  if (info.*.dlpi_name == null) return 0;
+
+  const name = std.mem.span(info.*.dlpi_name);
+  if (std.mem.indexOf(u8, name, "libPVZ2.so") != null) {
+    const raw_addr: usize = @intCast(info.*.dlpi_addr);
+    pvz2_base = raw_addr & 0x0000FFFFFFFFFFFF;
+    return 1;
+  }
+  return 0;
+}
 
 export fn JNI_OnLoad(vm: *anyopaque, _: *anyopaque) callconv(.c) i32 {
   _ = vm;
   // _ = __android_log_print(ANDROID_LOG_INFO, LIB_TAG, "JNI OnLoad");
 
-  log.info("Initialized Mod: {s}", .{LIB_TAG});
-
-  const baseAddr = getModuleBase("libPVZ2.so") catch |err| {
-    log.err("Failed to get module base: {any}", .{err});
-    return 0x00010006;
-  };
-  const targetAddr = (baseAddr + 0x0171d9fc);
-
-  log.info("--- DEBUG TRACE ---", .{});
-  log.info("Base Address: 0x{X}", .{baseAddr});
-  log.info("Target Address: 0x{X}", .{targetAddr});
-
-  // c.A64HookFunction(
-  //   @ptrFromInt(targetAddr),
-  //   @constCast(@ptrCast(&doStateChangeHook)),
-  //   @ptrCast(&originalDoStateChange),
-  // );
-
   return 0x00010006;
-}
-
-fn getModuleBase(libName: []const u8) !usize {
-  const file = try std.fs.openFileAbsolute("/proc/self/maps", .{});
-  defer file.close();
-
-  var buf: [4096]u8 = undefined;
-  var file_reader = file.reader(&buf);
-  const reader = &file_reader.interface;
-
-  while (reader.takeDelimiterExclusive('\n')) |line| {
-    if (std.mem.indexOf(u8, line, libName)) |_| {
-      const hyphen_idx = std.mem.indexOf(u8, line, "-") orelse continue;
-      return try std.fmt.parseInt(usize, line[0..hyphen_idx], 16);
-    }
-  }
-  else |err| switch (err) {
-    error.EndOfStream => return error.ModuleNotFound,
-    else => return err,
-  }
-  return error.ModuleNotFound;
 }

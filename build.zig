@@ -20,8 +20,12 @@ const NDK_aarch64_PATH = NDK_INCLUDE_PATH ++ "/aarch64-linux-android";
 const APKTOOL_PATH = HOME_PATH ++ ".apklab/apktool_3.0.1.jar";
 const SIGNER_PATH = HOME_PATH ++ ".apklab/uber-apk-signer-1.3.0.jar";
 
-// Dobby lib Path
+// And64InlineHook lib Path
 const AND64_PATH = "libs/And64InlineHook//";
+
+// ShadowHook lib Path
+const SHADOWHOOK_PATH = "libs/android-inline-hook/shadowhook/src/main/cpp";
+const SHADOWHOOK_INCLUDE_PATH = SHADOWHOOK_PATH ++ "/include";
 
 pub fn build(b: *std.Build) void {
   const target = b.standardTargetOptions(.{
@@ -33,6 +37,63 @@ pub fn build(b: *std.Build) void {
     }
   });
   const optimize = .ReleaseSmall;
+
+  // Compile ShadowHook
+  const shadowhook = b.addLibrary(.{
+    .name = "shadowhook",
+    .root_module = b.createModule(.{
+      .target = target,
+      .optimize = optimize,
+      .link_libc = true
+    }),
+    .linkage = .static
+  });
+
+  shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH));
+  shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH ++ "/include"));
+  shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH ++ "/common"));
+  shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH ++ "/arch/arm64"));
+  shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH ++ "/third_party/xdl/include"));
+  shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH ++ "/third_party/bsd"));
+  shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH ++ "/third_party/xdl"));
+  shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH ++ "/third_party/lss"));
+  shadowhook.addSystemIncludePath(.{ .cwd_relative = NDK_INCLUDE_PATH });
+  shadowhook.addSystemIncludePath(.{ .cwd_relative = NDK_aarch64_PATH });
+
+  shadowhook.addCSourceFiles(.{
+    .root = b.path(SHADOWHOOK_PATH),
+    .files = &.{
+      "shadowhook.c",
+      "sh_hub.c",
+      "sh_safe.c",
+      "sh_switch.c",
+      "sh_recorder.c",
+      "sh_elf.c",
+      "sh_enter.c",
+      "sh_island.c",
+      "sh_jni.c",
+      "sh_linker.c",
+      "sh_task.c",
+      "sh_xdl.c",
+
+      "common/bytesig.c",
+      "common/sh_log.c",
+      "common/sh_errno.c",
+      "common/sh_ref.c",
+      "common/sh_trampo.c",
+      "common/sh_util.c",
+
+      "arch/arm64/sh_inst.c",
+      "arch/arm64/sh_a64.c",
+
+      "third_party/xdl/xdl.c",
+      "third_party/xdl/xdl_iterate.c",
+      "third_party/xdl/xdl_linker.c",
+      "third_party/xdl/xdl_lzma.c",
+      "third_party/xdl/xdl_util.c",
+    },
+  });
+  shadowhook.addCSourceFile(.{.file = b.path(SHADOWHOOK_PATH ++ "/arch/arm64/sh_glue.S"),});
 
   const lib = b.addLibrary(.{
     .name = "Mod",
@@ -52,6 +113,10 @@ pub fn build(b: *std.Build) void {
     .flags = &.{ "-std=c++11" },
   });
   lib.addIncludePath(b.path(AND64_PATH));
+
+  lib.addIncludePath(b.path(SHADOWHOOK_PATH));
+  lib.addIncludePath(b.path(SHADOWHOOK_INCLUDE_PATH));
+  lib.linkLibrary(shadowhook);
 
   if (target.result.os.tag == .linux and target.result.abi == .android) {
     lib.setLibCFile(b.path("libc.txt"));
