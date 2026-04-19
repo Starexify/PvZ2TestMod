@@ -20,9 +20,6 @@ const NDK_aarch64_PATH = NDK_INCLUDE_PATH ++ "/aarch64-linux-android";
 const APKTOOL_PATH = HOME_PATH ++ ".apklab/apktool_3.0.1.jar";
 const SIGNER_PATH = HOME_PATH ++ ".apklab/uber-apk-signer-1.3.0.jar";
 
-// And64InlineHook lib Path
-const AND64_PATH = "libs/And64InlineHook//";
-
 // ShadowHook lib Path
 const SHADOWHOOK_PATH = "libs/android-inline-hook/shadowhook/src/main/cpp";
 const SHADOWHOOK_INCLUDE_PATH = SHADOWHOOK_PATH ++ "/include";
@@ -50,9 +47,9 @@ pub fn build(b: *std.Build) void {
   });
 
   shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH));
+  shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH ++ "/arch/arm64"));
   shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH ++ "/include"));
   shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH ++ "/common"));
-  shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH ++ "/arch/arm64"));
   shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH ++ "/third_party/xdl/include"));
   shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH ++ "/third_party/bsd"));
   shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH ++ "/third_party/xdl"));
@@ -95,6 +92,18 @@ pub fn build(b: *std.Build) void {
   });
   shadowhook.addCSourceFile(.{.file = b.path(SHADOWHOOK_PATH ++ "/arch/arm64/sh_glue.S"),});
 
+  const sh_nothing = b.addLibrary(.{
+    .name = "shadowhook_nothing",
+    .root_module = b.createModule(.{
+      .target = target,
+      .optimize = optimize,
+      .link_libc = true,
+    }),
+    .linkage = .dynamic,
+  });
+  sh_nothing.addIncludePath(b.path(SHADOWHOOK_PATH ++ "/nothing"));
+  sh_nothing.addCSourceFile(.{ .file = b.path(SHADOWHOOK_PATH ++ "/nothing/sh_nothing.c") });
+
   const lib = b.addLibrary(.{
     .name = "Mod",
     .root_module = b.createModule(.{
@@ -102,17 +111,11 @@ pub fn build(b: *std.Build) void {
       .target = target,
       .optimize = optimize,
       .link_libc = true,
-      .link_libcpp = true,
+      // .link_libcpp = true,
       .pic = true
     }),
     .linkage = .dynamic,
   });
-
-  lib.addCSourceFile(.{
-    .file = b.path(AND64_PATH ++ "/And64InlineHook.cpp"),
-    .flags = &.{ "-std=c++11" },
-  });
-  lib.addIncludePath(b.path(AND64_PATH));
 
   lib.addIncludePath(b.path(SHADOWHOOK_PATH));
   lib.addIncludePath(b.path(SHADOWHOOK_INCLUDE_PATH));
@@ -122,20 +125,30 @@ pub fn build(b: *std.Build) void {
     lib.setLibCFile(b.path("libc.txt"));
     lib.addLibraryPath(.{ .cwd_relative = NDK_ANDROID_API_PATH });
     lib.linkSystemLibrary("log");
+
+    sh_nothing.setLibCFile(b.path("libc.txt"));
+    sh_nothing.addLibraryPath(.{ .cwd_relative = NDK_ANDROID_API_PATH });
   }
 
+  b.installArtifact(sh_nothing);
   b.installArtifact(lib);
 
-  buildAPK(b, lib);
+  buildAPK(b, lib, sh_nothing);
 }
 
 /// Build APK
-pub fn buildAPK(b: *std.Build, lib: *std.Build.Step.Compile) void {
+pub fn buildAPK(b: *std.Build, lib: *std.Build.Step.Compile, sh_nothing: *std.Build.Step.Compile) void {
   const deploy_step = b.step("deploy", "Copy the built library to the decompiled APK folder");
 
+  // Put libMod into lib directory
   const install_lib = b.addSystemCommand(&.{ "cp" });
   install_lib.addArtifactArg(lib);
   install_lib.addArg(APK_DECOMP_PATH ++ "/lib/arm64-v8a/libMod.so");
+
+  // Put sh_nothing into lib directory
+  const cp_nothing = b.addSystemCommand(&.{ "cp" });
+  cp_nothing.addArtifactArg(sh_nothing);
+  cp_nothing.addArg(APK_DECOMP_PATH ++ "/lib/arm64-v8a/libshadowhook_nothing.so");
 
   // Build APK
   const apk_build = b.addSystemCommand(&.{ "java", "-jar", APKTOOL_PATH, "b", APK_DECOMP_PATH });

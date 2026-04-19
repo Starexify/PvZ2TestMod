@@ -2,7 +2,6 @@ const std = @import("std");
 const log = @import("log.zig");
 const c = @cImport({
   @cInclude("shadowhook.h");
-  @cInclude("And64InlineHook.hpp");
 });
 
 pub const LIB_TAG = "PVZ2_MOD";
@@ -19,28 +18,7 @@ fn doStateChangeHook(param1: usize,param2: u32,p3: u64, p4: u64, p5: u64, p6: u6
   }
 }
 
-export fn mod_main() callconv(.c) void {
-  log.info("Initialized Mod: {s}", .{LIB_TAG});
-
-  // Get the library
-  const handle = c.shadowhook_dlopen("libPVZ2.so");
-  _ = c.dl_iterate_phdr(dl_callback, null);
-  if (handle != null) c.shadowhook_dlclose(handle);
-
-  if (pvz2_base != 0) {
-    const targetAddr = pvz2_base + 0x0171d9fc;
-    log.info("FOUND LIB! Base: 0x{X}", .{pvz2_base});
-    log.info("Hooking Target: 0x{X}", .{targetAddr});
-    c.A64HookFunction(
-      @ptrFromInt(targetAddr),
-      @constCast(@ptrCast(&doStateChangeHook)),
-      @ptrCast(&originalDoStateChange),
-    );
-    log.info("And64InlineHook applied to target!", .{});
-  } else {
-    log.err("Could not locate libPVZ2.so base address.", .{});
-  }
-}
+export fn mod_main() callconv(.c) void {}
 export const initArrayPtr: *const fn () callconv(.c) void linksection(".init_array") = &mod_main;
 
 var pvz2_base: usize = 0;
@@ -59,6 +37,35 @@ fn dl_callback(info: [*c]const c.struct_dl_phdr_info, _: usize, _: ?*anyopaque) 
 export fn JNI_OnLoad(vm: *anyopaque, _: *anyopaque) callconv(.c) i32 {
   _ = vm;
   // _ = __android_log_print(ANDROID_LOG_INFO, LIB_TAG, "JNI OnLoad");
+  const rc = c.shadowhook_init(c.SHADOWHOOK_MODE_MULTI, true);
+  log.info("ShadowHook Init returned: {d}", .{rc});
+
+  log.info("Initialized Mod: {s}", .{LIB_TAG});
+
+  // Get the library
+  const handle = c.shadowhook_dlopen("libPVZ2.so");
+  _ = c.dl_iterate_phdr(dl_callback, null);
+  if (handle != null) c.shadowhook_dlclose(handle);
+
+  if (pvz2_base != 0) {
+    const targetAddr = pvz2_base + 0x0171d9fc;
+    log.info("FOUND LIB! Base: 0x{X}", .{pvz2_base});
+    log.info("Hooking Target: 0x{X}", .{targetAddr});
+    const stub = c.shadowhook_hook_func_addr(
+      @ptrFromInt(targetAddr),
+      @constCast(@ptrCast(&doStateChangeHook)),
+      @ptrCast(&originalDoStateChange),
+    );
+    if (stub == null) {
+      const err_num = c.shadowhook_get_errno();
+      const msg = c.shadowhook_to_errmsg(err_num);
+      log.err("HOOK FAILED! Error {d}: {s}", .{err_num, std.mem.span(msg)});
+    } else {
+      log.info("HOOK SUCCESS! Waiting for state change...", .{});
+    }
+  } else {
+    log.err("Could not locate libPVZ2.so base address.", .{});
+  }
 
   return 0x00010006;
 }
