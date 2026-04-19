@@ -96,7 +96,7 @@ pub fn build(b: *std.Build) void {
   if (target.result.os.tag == .linux and target.result.abi == .android) {
     lib.setLibCFile(b.path("libc.txt"));
 
-    const aarch64_lib_path =NDK_SYSROOT_PATH ++ "/usr/lib/aarch64-linux-android/35";
+    const aarch64_lib_path = NDK_SYSROOT_PATH ++ "/usr/lib/aarch64-linux-android/35";
     lib.addLibraryPath(.{ .cwd_relative = aarch64_lib_path });
     lib.linkSystemLibrary("log");
   }
