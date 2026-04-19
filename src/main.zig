@@ -19,7 +19,16 @@ fn doStateChangeHook(param1: usize,param2: u32,p3: u64, p4: u64, p5: u64, p6: u6
 }
 
 export fn mod_main() callconv(.c) void {
-  _ = sh.shadowhook_init(sh.SHADOWHOOK_MODE_UNIQUE, true);
+
+}
+export const initArrayPtr: *const fn () callconv(.c) void linksection(".init_array") = &mod_main;
+
+export fn JNI_OnLoad(vm: *anyopaque, _: *anyopaque) callconv(.c) i32 {
+  _ = vm;
+  // _ = __android_log_print(ANDROID_LOG_INFO, LIB_TAG, "JNI OnLoad");
+
+  const rc = sh.shadowhook_init(sh.SHADOWHOOK_MODE_SHARED, true);
+  log.info("ShadowHook Init returned: {d}", .{rc});
 
   log.info("Initialized Mod: {s}", .{LIB_TAG});
   log.info("ShadowHook Version: {s}", .{sh.shadowhook_get_version()});
@@ -27,11 +36,10 @@ export fn mod_main() callconv(.c) void {
   const handle = sh.shadowhook_dlopen("libPVZ2.so");
   if (handle == null) {
     log.err("Could not find the library libPVZ2.so", .{});
-    return;
   }
   defer sh.shadowhook_dlclose(handle);
 
-  const funcAddrOffset = 0x0181d9fc;
+  const funcAddrOffset = 0x0171d9fc;
   const baseAddr = @intFromPtr(handle);
   const targetAddr = baseAddr + funcAddrOffset;
 
@@ -51,11 +59,6 @@ export fn mod_main() callconv(.c) void {
     const err = sh.shadowhook_get_errno();
     log.err("Hook FAILED! Error {d}: {s}", .{err, sh.shadowhook_to_errmsg(err)});
   }
-}
-export const initArrayPtr: *const fn () callconv(.c) void linksection(".init_array") = &mod_main;
 
-export fn JNI_OnLoad(vm: *anyopaque, _: *anyopaque) callconv(.c) i32 {
-  _ = vm;
-  // _ = __android_log_print(ANDROID_LOG_INFO, LIB_TAG, "JNI OnLoad");
   return 0x00010006;
 }
