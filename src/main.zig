@@ -13,8 +13,8 @@ export fn mod_main() callconv(.c) void {}
 export const initArrayPtr: *const fn () callconv(.c) void linksection(".init_array") = &mod_main;
 
 pub var originalDoStateChange: ?*anyopaque = null;
-fn doStateChangeHook(self: *GameStateMgr, param2: u32,p3: u64, p4: u64, p5: u64, p6: u64, p7: u64, p8: u64) callconv(.c) void {
-  log.info("State Change Detected! New State: {d}", .{param2});
+fn doStateChangeHook(self: *GameStateMgr, param2: u32, p3: u64, p4: u64, p5: u64, p6: u64, p7: u64, p8: u64) callconv(.c) void {
+  log.info("State Change Detected! New State: {d} {d} {d} {d} {d} {d} {d}", .{param2, p3, p4, p5, p6, p7, p8});
   self.DoStateChange(originalDoStateChange, param2, p3, p4, p5, p6, p7, p8);
 }
 
