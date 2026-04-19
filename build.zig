@@ -1,14 +1,35 @@
 const std = @import("std");
 
-const NDK_SYSROOT_PATH = "/home/ImVeryBad/ToolKits/Android NDK/android-ndk-r27d/toolchains/llvm/prebuilt/linux-x86_64/sysroot";
+/// Custom Paths.
+/// These should be changed on different setups!!
+const MOD_TAG = "PVZ2_MOD";
+const HOME_PATH = "/home/ImVeryBad/";
+const NDK_PATH = HOME_PATH ++ "ToolKits/Android NDK/android-ndk-r27d";
+const ANDROID_PKG = "com.ea.game.pvz2_bad";
+const APK_PATH = "com.ea.game.pvz2_bad_13.0.1-1042_minAPI24(arm64-v8a,armeabi-v7a)(nodpi)";
+const APK_DECOMP_PATH = HOME_PATH ++ "Modding/PvZ2/13.0.1/" ++ APK_PATH;
 
-const APK_DECOMP_PATH = "/home/ImVeryBad/Modding/PvZ2/13.0.1/com.ea.game.pvz2_row_13.0.1-1042_minAPI24(arm64-v8a,armeabi-v7a)(nodpi)";
-const APKTOOL_PATH = "/home/ImVeryBad/.apklab/apktool_3.0.1.jar";
-const SIGNER_PATH = "/home/ImVeryBad/.apklab/uber-apk-signer-1.3.0.jar";
+const NDK_SYSROOT_PATH = NDK_PATH ++ "/toolchains/llvm/prebuilt/linux-x86_64/sysroot";
+const NDK_ANDROID_API_PATH = NDK_SYSROOT_PATH ++ "/usr/lib/aarch64-linux-android/35";
+const NDK_INCLUDE_PATH = NDK_SYSROOT_PATH ++ "/usr/include";
+const NDK_aarch64_PATH = NDK_INCLUDE_PATH ++ "/aarch64-linux-android";
+
+const APKTOOL_PATH = HOME_PATH ++ ".apklab/apktool_3.0.1.jar";
+const SIGNER_PATH = HOME_PATH ++ ".apklab/uber-apk-signer-1.3.0.jar";
+
+const SHADOWHOOK_PATH = "libs/android-inline-hook/shadowhook/src/main/cpp";
+const SHADOWHOOK_INCLUDE_PATH = SHADOWHOOK_PATH ++ "/include";
 
 pub fn build(b: *std.Build) void {
-  const target = b.standardTargetOptions(.{});
-  const optimize = b.standardOptimizeOption(.{});
+  const target = b.standardTargetOptions(.{
+    .default_target = .{
+      .cpu_arch = .aarch64,
+      .os_tag = .linux,
+      .abi = .android,
+      .android_api_level = 35
+    }
+  });
+  const optimize = .ReleaseSmall;
 
   // Compile ShadowHook
   const shadowhook = b.addLibrary(.{
@@ -16,30 +37,24 @@ pub fn build(b: *std.Build) void {
     .root_module = b.createModule(.{
       .target = target,
       .optimize = optimize,
+      .link_libc = true
     }),
     .linkage = .static
   });
 
-//  const shadowHookDep = b.dependency("shadowHook", .{});
-
-  const ndk_include = NDK_SYSROOT_PATH ++ "/usr/include";
-  const ndk_include_aarch64 = NDK_SYSROOT_PATH ++ "/usr/include/aarch64-linux-android";
-
-  const sh_path = "libs/android-inline-hook/shadowhook/src/main/cpp";
-  shadowhook.addIncludePath(b.path(sh_path ++ "/third_party/xdl/include"));
-  shadowhook.addIncludePath(b.path(sh_path ++ "/third_party/bsd"));
-  shadowhook.addIncludePath(b.path(sh_path ++ "/third_party/xdl"));
-  shadowhook.addIncludePath(b.path(sh_path ++ "/third_party/lss"));
-  shadowhook.addIncludePath(b.path(sh_path));
-  shadowhook.addIncludePath(b.path(sh_path ++ "/common"));
-  shadowhook.addIncludePath(b.path(sh_path ++ "/arch/arm64"));
-  shadowhook.addSystemIncludePath(.{ .cwd_relative = ndk_include });
-  shadowhook.addSystemIncludePath(.{ .cwd_relative = ndk_include_aarch64 });
-  const sh_include_path = "libs/android-inline-hook/shadowhook/src/main/cpp/include";
-  shadowhook.addIncludePath(b.path(sh_include_path));
+  shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH));
+  shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH ++ "/include"));
+  shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH ++ "/common"));
+  shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH ++ "/arch/arm64"));
+  shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH ++ "/third_party/xdl/include"));
+  shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH ++ "/third_party/bsd"));
+  shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH ++ "/third_party/xdl"));
+  shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH ++ "/third_party/lss"));
+  shadowhook.addSystemIncludePath(.{ .cwd_relative = NDK_INCLUDE_PATH });
+  shadowhook.addSystemIncludePath(.{ .cwd_relative = NDK_aarch64_PATH });
 
   shadowhook.addCSourceFiles(.{
-    .root = b.path(sh_path),
+    .root = b.path(SHADOWHOOK_PATH),
     .files = &.{
       "shadowhook.c",
       "sh_hub.c",
@@ -72,9 +87,8 @@ pub fn build(b: *std.Build) void {
     },
   });
   shadowhook.addCSourceFile(.{
-    .file = b.path(sh_path ++ "/arch/arm64/sh_glue.S"),
+    .file = b.path(SHADOWHOOK_PATH ++ "/arch/arm64/sh_glue.S"),
   });
-  shadowhook.linkLibC();
 
   const lib = b.addLibrary(.{
     .name = "Mod",
@@ -82,22 +96,19 @@ pub fn build(b: *std.Build) void {
       .root_source_file = b.path("src/main.zig"),
       .target = target,
       .optimize = optimize,
-      .pic = true,
+      .link_libc = true,
+      .pic = true
     }),
     .linkage = .dynamic,
   });
 
-  // lib.addIncludePath(shadowHookDep.path("include"));
-  // lib.addLibraryPath(shadowHookDep.path("libs/arm64-v8a"));
-  // lib.linkSystemLibrary("shadowhook");
-  lib.addIncludePath(b.path("libs/android-inline-hook/shadowhook/src/main/cpp/include"));
+  lib.addIncludePath(b.path(SHADOWHOOK_PATH));
+  lib.addIncludePath(b.path(SHADOWHOOK_INCLUDE_PATH));
   lib.linkLibrary(shadowhook);
-  lib.addIncludePath(b.path(sh_path));
+
   if (target.result.os.tag == .linux and target.result.abi == .android) {
     lib.setLibCFile(b.path("libc.txt"));
-
-    const aarch64_lib_path = NDK_SYSROOT_PATH ++ "/usr/lib/aarch64-linux-android/35";
-    lib.addLibraryPath(.{ .cwd_relative = aarch64_lib_path });
+    lib.addLibraryPath(.{ .cwd_relative = NDK_ANDROID_API_PATH });
     lib.linkSystemLibrary("log");
   }
 
@@ -112,7 +123,7 @@ pub fn buildAPK(b: *std.Build, lib: *std.Build.Step.Compile) void {
 
   const install_lib = b.addSystemCommand(&.{ "cp" });
   install_lib.addArtifactArg(lib);
-  install_lib.addArg(b.fmt("{s}/lib/arm64-v8a/libMod.so", .{APK_DECOMP_PATH}));
+  install_lib.addArg(APK_DECOMP_PATH ++ "/lib/arm64-v8a/libMod.so");
 
   // Build APK
   const apk_build = b.addSystemCommand(&.{ "java", "-jar", APKTOOL_PATH, "b", APK_DECOMP_PATH });
@@ -121,25 +132,27 @@ pub fn buildAPK(b: *std.Build, lib: *std.Build.Step.Compile) void {
   // Sign APK
   const apk_sign = b.addSystemCommand(&.{
     "java", "-jar", SIGNER_PATH,
-    "-a", b.fmt("{s}/dist", .{APK_DECOMP_PATH}),
+    "-a", APK_DECOMP_PATH ++ "/dist",
     "--overwrite", "--allowResign"
   });
   apk_sign.step.dependOn(&apk_build.step);
 
   // Install via ADB
-  const final_apk_path = b.fmt("{s}/dist/com.ea.game.pvz2_bad_13.0.1-1042_minAPI24(arm64-v8a,armeabi-v7a)(nodpi).apk", .{APK_DECOMP_PATH});
-  const adb_install = b.addSystemCommand(&.{ "adb", "install", "-r", final_apk_path });
+  const final_apk_path = APK_DECOMP_PATH ++ "/dist/" ++ APK_PATH ++ ".apk";
+  const adb_install = b.addSystemCommand(&.{
+    "adb", "install", "-r", final_apk_path
+  });
   adb_install.step.dependOn(&apk_sign.step);
 
   // Launch Game
   const launch_game = b.addSystemCommand(&.{
-    "adb", "shell", "monkey", "-p", "com.ea.game.pvz2_bad", "1"
+    "adb", "shell", "monkey", "-p", ANDROID_PKG, "1"
   });
   launch_game.step.dependOn(&adb_install.step);
 
   // Start Logcat
   const log_cmd = b.addSystemCommand(&.{
-    "adb", "logcat", "PVZ2_MOD:V", "DEBUG:V", "*:S" // "AndroidRuntime:E",
+    "adb", "logcat", MOD_TAG++":V", "DEBUG:V", "*:S" // "AndroidRuntime:E",
   });
   log_cmd.step.dependOn(&launch_game.step);
   deploy_step.dependOn(&log_cmd.step);
