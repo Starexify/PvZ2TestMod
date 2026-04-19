@@ -3,10 +3,15 @@
     .version = "0.0.0",
     .fingerprint = 0x1b01888cb39ba80f, // Changing this has security and trust implications.
     .minimum_zig_version = "0.15.2",
-    .dependencies = .{},
+    .dependencies = .{
+        // .shadowHook = .{
+        //     .path = "libs/android-inline-hook"
+        // }
+    },
     .paths = .{
         "build.zig",
         "build.zig.zon",
         "src",
+        "libs"
     },
 }

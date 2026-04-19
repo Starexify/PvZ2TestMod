@@ -10,6 +10,72 @@ pub fn build(b: *std.Build) void {
   const target = b.standardTargetOptions(.{});
   const optimize = b.standardOptimizeOption(.{});
 
+  // Compile ShadowHook
+  const shadowhook = b.addLibrary(.{
+    .name = "shadowhook",
+    .root_module = b.createModule(.{
+      .target = target,
+      .optimize = optimize,
+    }),
+    .linkage = .static
+  });
+
+//  const shadowHookDep = b.dependency("shadowHook", .{});
+
+  const ndk_include = NDK_SYSROOT_PATH ++ "/usr/include";
+  const ndk_include_aarch64 = NDK_SYSROOT_PATH ++ "/usr/include/aarch64-linux-android";
+
+  const sh_path = "libs/android-inline-hook/shadowhook/src/main/cpp";
+  shadowhook.addIncludePath(b.path(sh_path ++ "/third_party/xdl/include"));
+  shadowhook.addIncludePath(b.path(sh_path ++ "/third_party/bsd"));
+  shadowhook.addIncludePath(b.path(sh_path ++ "/third_party/xdl"));
+  shadowhook.addIncludePath(b.path(sh_path ++ "/third_party/lss"));
+  shadowhook.addIncludePath(b.path(sh_path));
+  shadowhook.addIncludePath(b.path(sh_path ++ "/common"));
+  shadowhook.addIncludePath(b.path(sh_path ++ "/arch/arm64"));
+  shadowhook.addSystemIncludePath(.{ .cwd_relative = ndk_include });
+  shadowhook.addSystemIncludePath(.{ .cwd_relative = ndk_include_aarch64 });
+  const sh_include_path = "libs/android-inline-hook/shadowhook/src/main/cpp/include";
+  shadowhook.addIncludePath(b.path(sh_include_path));
+
+  shadowhook.addCSourceFiles(.{
+    .root = b.path(sh_path),
+    .files = &.{
+      "shadowhook.c",
+      "sh_hub.c",
+      "sh_safe.c",
+      "sh_switch.c",
+      "sh_recorder.c",
+      "sh_elf.c",
+      "sh_enter.c",
+      "sh_island.c",
+      "sh_jni.c",
+      "sh_linker.c",
+      "sh_task.c",
+      "sh_xdl.c",
+
+      "common/bytesig.c",
+      "common/sh_log.c",
+      "common/sh_errno.c",
+      "common/sh_ref.c",
+      "common/sh_trampo.c",
+      "common/sh_util.c",
+
+      "arch/arm64/sh_inst.c",
+      "arch/arm64/sh_a64.c",
+
+      "third_party/xdl/xdl.c",
+      "third_party/xdl/xdl_iterate.c",
+      "third_party/xdl/xdl_linker.c",
+      "third_party/xdl/xdl_lzma.c",
+      "third_party/xdl/xdl_util.c",
+    },
+  });
+  shadowhook.addCSourceFile(.{
+    .file = b.path(sh_path ++ "/arch/arm64/sh_glue.S"),
+  });
+  shadowhook.linkLibC();
+
   const lib = b.addLibrary(.{
     .name = "Mod",
     .root_module = b.createModule(.{
@@ -21,6 +87,12 @@ pub fn build(b: *std.Build) void {
     .linkage = .dynamic,
   });
 
+  // lib.addIncludePath(shadowHookDep.path("include"));
+  // lib.addLibraryPath(shadowHookDep.path("libs/arm64-v8a"));
+  // lib.linkSystemLibrary("shadowhook");
+  lib.addIncludePath(b.path("libs/android-inline-hook/shadowhook/src/main/cpp/include"));
+  lib.linkLibrary(shadowhook);
+  lib.addIncludePath(b.path(sh_path));
   if (target.result.os.tag == .linux and target.result.abi == .android) {
     lib.setLibCFile(b.path("libc.txt"));
 
