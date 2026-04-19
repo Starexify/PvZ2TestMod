@@ -10,8 +10,9 @@ const APK_PATH = "com.ea.game.pvz2_bad_13.0.1-1042_minAPI24(arm64-v8a,armeabi-v7
 const APK_DECOMP_PATH = HOME_PATH ++ "Modding/PvZ2/13.0.1/" ++ APK_PATH;
 
 /// Android NDK
+const ANDROID_API = 35;
 const NDK_SYSROOT_PATH = NDK_PATH ++ "/toolchains/llvm/prebuilt/linux-x86_64/sysroot";
-const NDK_ANDROID_API_PATH = NDK_SYSROOT_PATH ++ "/usr/lib/aarch64-linux-android/35";
+const NDK_ANDROID_API_PATH = NDK_SYSROOT_PATH ++ "/usr/lib/aarch64-linux-android/" ++ std.fmt.comptimePrint("{d}", .{ANDROID_API});
 const NDK_INCLUDE_PATH = NDK_SYSROOT_PATH ++ "/usr/include";
 const NDK_aarch64_PATH = NDK_INCLUDE_PATH ++ "/aarch64-linux-android";
 
@@ -19,9 +20,9 @@ const NDK_aarch64_PATH = NDK_INCLUDE_PATH ++ "/aarch64-linux-android";
 const APKTOOL_PATH = HOME_PATH ++ ".apklab/apktool_3.0.1.jar";
 const SIGNER_PATH = HOME_PATH ++ ".apklab/uber-apk-signer-1.3.0.jar";
 
-// ShadowHook lib Path
-const SHADOWHOOK_PATH = "libs/android-inline-hook/shadowhook/src/main/cpp";
-const SHADOWHOOK_INCLUDE_PATH = SHADOWHOOK_PATH ++ "/include";
+// Dobby lib Path
+const DOBBY_PATH = "libs/Dobby/";
+const DOBBY_INCLUDE = DOBBY_PATH ++ "/include";
 
 pub fn build(b: *std.Build) void {
   const target = b.standardTargetOptions(.{
@@ -29,14 +30,13 @@ pub fn build(b: *std.Build) void {
       .cpu_arch = .aarch64,
       .os_tag = .linux,
       .abi = .android,
-      .android_api_level = 35
+      .android_api_level = ANDROID_API
     }
   });
   const optimize = .ReleaseSmall;
 
-  // Compile ShadowHook
-  const shadowhook = b.addLibrary(.{
-    .name = "shadowhook",
+  const dobby = b.addLibrary(.{
+    .name = "dobby",
     .root_module = b.createModule(.{
       .target = target,
       .optimize = optimize,
@@ -45,52 +45,16 @@ pub fn build(b: *std.Build) void {
     .linkage = .static
   });
 
-  shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH));
-  shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH ++ "/include"));
-  shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH ++ "/common"));
-  shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH ++ "/arch/arm64"));
-  shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH ++ "/third_party/xdl/include"));
-  shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH ++ "/third_party/bsd"));
-  shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH ++ "/third_party/xdl"));
-  shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH ++ "/third_party/lss"));
-  shadowhook.addSystemIncludePath(.{ .cwd_relative = NDK_INCLUDE_PATH });
-  shadowhook.addSystemIncludePath(.{ .cwd_relative = NDK_aarch64_PATH });
+  dobby.addIncludePath(b.path(DOBBY_INCLUDE));
+  dobby.addIncludePath(b.path(DOBBY_PATH ++ "/source"));
 
-  shadowhook.addCSourceFiles(.{
-    .root = b.path(SHADOWHOOK_PATH),
+  dobby.addCSourceFiles(.{
+    .root = b.path(DOBBY_PATH),
     .files = &.{
-      "shadowhook.c",
-      "sh_hub.c",
-      "sh_safe.c",
-      "sh_switch.c",
-      "sh_recorder.c",
-      "sh_elf.c",
-      "sh_enter.c",
-      "sh_island.c",
-      "sh_jni.c",
-      "sh_linker.c",
-      "sh_task.c",
-      "sh_xdl.c",
-
-      "common/bytesig.c",
-      "common/sh_log.c",
-      "common/sh_errno.c",
-      "common/sh_ref.c",
-      "common/sh_trampo.c",
-      "common/sh_util.c",
-
-      "arch/arm64/sh_inst.c",
-      "arch/arm64/sh_a64.c",
-
-      "third_party/xdl/xdl.c",
-      "third_party/xdl/xdl_iterate.c",
-      "third_party/xdl/xdl_linker.c",
-      "third_party/xdl/xdl_lzma.c",
-      "third_party/xdl/xdl_util.c",
+      "source/dobby.c",
+      "source/InstructionRelocation/arm64/InstructionRelocationARM64.cc",
+      "source/Backend/BackendARM64/ClosureBridgeARM64.cc",
     },
-  });
-  shadowhook.addCSourceFile(.{
-    .file = b.path(SHADOWHOOK_PATH ++ "/arch/arm64/sh_glue.S"),
   });
 
   const lib = b.addLibrary(.{
@@ -105,9 +69,8 @@ pub fn build(b: *std.Build) void {
     .linkage = .dynamic,
   });
 
-  lib.addIncludePath(b.path(SHADOWHOOK_PATH));
-  lib.addIncludePath(b.path(SHADOWHOOK_INCLUDE_PATH));
-  lib.linkLibrary(shadowhook);
+  lib.addIncludePath(b.path(DOBBY_INCLUDE));
+  lib.linkLibrary(dobby);
 
   if (target.result.os.tag == .linux and target.result.abi == .android) {
     lib.setLibCFile(b.path("libc.txt"));
