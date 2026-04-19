@@ -1,7 +1,9 @@
 const std = @import("std");
 const log = @import("log.zig");
-const sh = @cImport({
-
+const c = @cImport({
+  @cInclude("stdint.h");
+  @cInclude("And64InlineHook.hpp");
+  @cInclude("dlfcn.h");
 });
 
 pub const LIB_TAG = "PVZ2_MOD";
@@ -25,13 +27,44 @@ export fn JNI_OnLoad(vm: *anyopaque, _: *anyopaque) callconv(.c) i32 {
   _ = vm;
   // _ = __android_log_print(ANDROID_LOG_INFO, LIB_TAG, "JNI OnLoad");
 
-
   log.info("Initialized Mod: {s}", .{LIB_TAG});
 
-  const funcAddrOffset = 0x0171d9fc;
-
+  const baseAddr = getModuleBase("libPVZ2.so") catch |err| {
+    log.err("Failed to get module base: {any}", .{err});
+    return 0x00010006;
+  };
+  const targetAddr = (baseAddr + 0x0171d9fc);
 
   log.info("--- DEBUG TRACE ---", .{});
+  log.info("Base Address: 0x{X}", .{baseAddr});
+  log.info("Target Address: 0x{X}", .{targetAddr});
+
+  // c.A64HookFunction(
+  //   @ptrFromInt(targetAddr),
+  //   @constCast(@ptrCast(&doStateChangeHook)),
+  //   @ptrCast(&originalDoStateChange),
+  // );
 
   return 0x00010006;
+}
+
+fn getModuleBase(libName: []const u8) !usize {
+  const file = try std.fs.openFileAbsolute("/proc/self/maps", .{});
+  defer file.close();
+
+  var buf: [4096]u8 = undefined;
+  var file_reader = file.reader(&buf);
+  const reader = &file_reader.interface;
+
+  while (reader.takeDelimiterExclusive('\n')) |line| {
+    if (std.mem.indexOf(u8, line, libName)) |_| {
+      const hyphen_idx = std.mem.indexOf(u8, line, "-") orelse continue;
+      return try std.fmt.parseInt(usize, line[0..hyphen_idx], 16);
+    }
+  }
+  else |err| switch (err) {
+    error.EndOfStream => return error.ModuleNotFound,
+    else => return err,
+  }
+  return error.ModuleNotFound;
 }

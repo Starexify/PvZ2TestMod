@@ -21,8 +21,7 @@ const APKTOOL_PATH = HOME_PATH ++ ".apklab/apktool_3.0.1.jar";
 const SIGNER_PATH = HOME_PATH ++ ".apklab/uber-apk-signer-1.3.0.jar";
 
 // Dobby lib Path
-const DOBBY_PATH = "libs/Dobby/";
-const DOBBY_INCLUDE = DOBBY_PATH ++ "/include";
+const AND64_PATH = "libs/And64InlineHook//";
 
 pub fn build(b: *std.Build) void {
   const target = b.standardTargetOptions(.{
@@ -35,28 +34,6 @@ pub fn build(b: *std.Build) void {
   });
   const optimize = .ReleaseSmall;
 
-  const dobby = b.addLibrary(.{
-    .name = "dobby",
-    .root_module = b.createModule(.{
-      .target = target,
-      .optimize = optimize,
-      .link_libc = true
-    }),
-    .linkage = .static
-  });
-
-  dobby.addIncludePath(b.path(DOBBY_INCLUDE));
-  dobby.addIncludePath(b.path(DOBBY_PATH ++ "/source"));
-
-  dobby.addCSourceFiles(.{
-    .root = b.path(DOBBY_PATH),
-    .files = &.{
-      "source/dobby.c",
-      "source/InstructionRelocation/arm64/InstructionRelocationARM64.cc",
-      "source/Backend/BackendARM64/ClosureBridgeARM64.cc",
-    },
-  });
-
   const lib = b.addLibrary(.{
     .name = "Mod",
     .root_module = b.createModule(.{
@@ -64,13 +41,17 @@ pub fn build(b: *std.Build) void {
       .target = target,
       .optimize = optimize,
       .link_libc = true,
+      .link_libcpp = true,
       .pic = true
     }),
     .linkage = .dynamic,
   });
 
-  lib.addIncludePath(b.path(DOBBY_INCLUDE));
-  lib.linkLibrary(dobby);
+  lib.addCSourceFile(.{
+    .file = b.path(AND64_PATH ++ "/And64InlineHook.cpp"),
+    .flags = &.{ "-std=c++11" },
+  });
+  lib.addIncludePath(b.path(AND64_PATH));
 
   if (target.result.os.tag == .linux and target.result.abi == .android) {
     lib.setLibCFile(b.path("libc.txt"));

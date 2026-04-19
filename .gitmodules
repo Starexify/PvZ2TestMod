@@ -4,3 +4,6 @@
 [submodule "libs/Dobby"]
 	path = libs/Dobby
 	url = https://github.com/jmpews/Dobby
+[submodule "libs/And64InlineHook"]
+	path = libs/And64InlineHook
+	url = https://github.com/Rprop/And64InlineHook
