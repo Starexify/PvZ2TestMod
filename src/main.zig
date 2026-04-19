@@ -8,6 +8,7 @@ pub const LIB_TAG = "PVZ2_MOD";
 
 export fn mod_main() callconv(.c) void {
   // _ = sh.shadowhook_init(sh.SHADOWHOOK_MODE_SHARED, true);
+
   log.info("Initialized Mod: {s}", .{LIB_TAG});
   log.info("ShadowHook Version: {s}", .{sh.shadowhook_get_version()});
 }

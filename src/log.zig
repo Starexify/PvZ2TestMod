@@ -13,3 +13,4 @@ pub fn log(prio: c_int, comptime fmt: []const u8, args: anytype) void {
 }
 
 pub fn info(comptime fmt: []const u8, args: anytype) void { log(androidLog.ANDROID_LOG_INFO, fmt, args); }
+pub fn err(comptime fmt: []const u8, args: anytype) void { log(androidLog.ANDROID_LOG_ERROR, fmt, args); }
