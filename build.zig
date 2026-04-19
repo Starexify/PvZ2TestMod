@@ -43,7 +43,7 @@ pub fn build(b: *std.Build) void {
       .optimize = optimize,
       .link_libc = true
     }),
-    .linkage = .static
+    .linkage = .dynamic
   });
 
   shadowhook.addIncludePath(b.path(SHADOWHOOK_PATH));
@@ -120,7 +120,6 @@ pub fn build(b: *std.Build) void {
   lib.addIncludePath(b.path(SHADOWHOOK_PATH));
   lib.addIncludePath(b.path(SHADOWHOOK_INCLUDE_PATH));
   lib.linkLibrary(shadowhook);
-
   if (target.result.os.tag == .linux and target.result.abi == .android) {
     lib.setLibCFile(b.path("libc.txt"));
     lib.addLibraryPath(.{ .cwd_relative = NDK_ANDROID_API_PATH });
@@ -128,16 +127,20 @@ pub fn build(b: *std.Build) void {
 
     sh_nothing.setLibCFile(b.path("libc.txt"));
     sh_nothing.addLibraryPath(.{ .cwd_relative = NDK_ANDROID_API_PATH });
+
+    shadowhook.setLibCFile(b.path("libc.txt"));
+    shadowhook.addLibraryPath(.{ .cwd_relative = NDK_ANDROID_API_PATH });
   }
 
+  b.installArtifact(shadowhook);
   b.installArtifact(sh_nothing);
   b.installArtifact(lib);
 
-  buildAPK(b, lib, sh_nothing);
+  buildAPK(b, lib, sh_nothing, shadowhook);
 }
 
 /// Build APK
-pub fn buildAPK(b: *std.Build, lib: *std.Build.Step.Compile, sh_nothing: *std.Build.Step.Compile) void {
+pub fn buildAPK(b: *std.Build, lib: *std.Build.Step.Compile, sh_nothing: *std.Build.Step.Compile, shadowhook: *std.Build.Step.Compile) void {
   const deploy_step = b.step("deploy", "Copy the built library to the decompiled APK folder");
 
   // Put libMod into lib directory
@@ -150,9 +153,15 @@ pub fn buildAPK(b: *std.Build, lib: *std.Build.Step.Compile, sh_nothing: *std.Bu
   cp_nothing.addArtifactArg(sh_nothing);
   cp_nothing.addArg(APK_DECOMP_PATH ++ "/lib/arm64-v8a/libshadowhook_nothing.so");
 
+  const cp_shadowhook = b.addSystemCommand(&.{ "cp" });
+  cp_shadowhook.addArtifactArg(shadowhook);
+  cp_shadowhook.addArg(APK_DECOMP_PATH ++ "/lib/arm64-v8a/libshadowhook.so");
+
   // Build APK
   const apk_build = b.addSystemCommand(&.{ "java", "-jar", APKTOOL_PATH, "b", APK_DECOMP_PATH });
   apk_build.step.dependOn(&install_lib.step);
+  apk_build.step.dependOn(&cp_nothing.step);
+  apk_build.step.dependOn(&cp_shadowhook.step);
 
   // Sign APK
   const apk_sign = b.addSystemCommand(&.{
