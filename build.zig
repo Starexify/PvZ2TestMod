@@ -9,14 +9,17 @@ const ANDROID_PKG = "com.ea.game.pvz2_bad";
 const APK_PATH = "com.ea.game.pvz2_bad_13.0.1-1042_minAPI24(arm64-v8a,armeabi-v7a)(nodpi)";
 const APK_DECOMP_PATH = HOME_PATH ++ "Modding/PvZ2/13.0.1/" ++ APK_PATH;
 
+/// Android NDK
 const NDK_SYSROOT_PATH = NDK_PATH ++ "/toolchains/llvm/prebuilt/linux-x86_64/sysroot";
 const NDK_ANDROID_API_PATH = NDK_SYSROOT_PATH ++ "/usr/lib/aarch64-linux-android/35";
 const NDK_INCLUDE_PATH = NDK_SYSROOT_PATH ++ "/usr/include";
 const NDK_aarch64_PATH = NDK_INCLUDE_PATH ++ "/aarch64-linux-android";
 
+// APK Tool Paths (Using the .apklab VSCode extension utils)
 const APKTOOL_PATH = HOME_PATH ++ ".apklab/apktool_3.0.1.jar";
 const SIGNER_PATH = HOME_PATH ++ ".apklab/uber-apk-signer-1.3.0.jar";
 
+// ShadowHook lib Path
 const SHADOWHOOK_PATH = "libs/android-inline-hook/shadowhook/src/main/cpp";
 const SHADOWHOOK_INCLUDE_PATH = SHADOWHOOK_PATH ++ "/include";
 
