@@ -1,6 +1,5 @@
 const std = @import("std");
 const log = @import("log.zig");
-const Offsets = @import("popcap/Offsets.zig");
 const sh = @cImport({
   @cInclude("shadowhook.h");
 });

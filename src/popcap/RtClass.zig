@@ -5,13 +5,13 @@ const RtClass = extern struct { // size 0x48
 };
 
 const RtClassVTable = struct {
-  GetType: *const fn (*anyopaque) callconv(.C) *RtClass,
-  Func1: *const fn (*anyopaque) callconv(.C) void,
-  Func2: *const fn (*anyopaque) callconv(.C) void,
-  Func3: *const fn (*anyopaque) callconv(.C) void,
-  Func4: *const fn (*anyopaque) callconv(.C) void,
-  Func5: *const fn (*anyopaque) callconv(.C) void,
-  Func6: *const fn (*anyopaque) callconv(.C) void,
-  Func7: *const fn (*anyopaque) callconv(.C) void,
-  Func8: *const fn (*anyopaque) callconv(.C) void,
+  GetType: *const fn (*anyopaque) callconv(.c) *RtClass,
+  Func1: *const fn (*anyopaque) callconv(.c) void,
+  Func2: *const fn (*anyopaque) callconv(.c) void,
+  Func3: *const fn (*anyopaque) callconv(.c) void,
+  Func4: *const fn (*anyopaque) callconv(.c) void,
+  Func5: *const fn (*anyopaque) callconv(.c) void,
+  Func6: *const fn (*anyopaque) callconv(.c) void,
+  Func7: *const fn (*anyopaque) callconv(.c) void,
+  Func8: *const fn (*anyopaque) callconv(.c) void,
 };

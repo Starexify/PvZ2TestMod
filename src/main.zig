@@ -4,8 +4,8 @@ const sh = @cImport({
   @cInclude("shadowhook.h");
 });
 const HookUtil = @import("hookUtil.zig");
-const FunctionOffset = @import("popcap/Offsets.zig").FunctionOffset;
 const GameStateMgr = @import("popcap/GameStateMgr.zig").GameStateMgr;
+const Zombie = @import("popcap/Zombie.zig").Zombie;
 
 pub const LIB_TAG = "PVZ2_MOD";
 
@@ -35,7 +35,7 @@ export fn JNI_OnLoad(vm: *anyopaque, _: *anyopaque) callconv(.c) i32 {
   _ = sh.dl_iterate_phdr(@ptrCast(&HookUtil.dl_callback), null);
   if (HookUtil.pvz2_base != 0) {
     log.info("FOUND LIB! Base: 0x{X}", .{HookUtil.pvz2_base});
-    HookUtil.hookFunction(FunctionOffset.DoStateChange,&doStateChangeHook,&originalDoStateChange);
+    HookUtil.hookFunction(GameStateMgr.offsets.DoStateChange,&doStateChangeHook,&originalDoStateChange);
   }
   else {
     log.err("Could not locate libPVZ2.so base address.", .{});

@@ -5,4 +5,8 @@ pub const GameStateMgr = opaque {
       orig(self, param2, p3, p4, p5, p6, p7, p8);
     }
   }
+
+  pub const offsets = struct {
+    pub const DoStateChange = 0x0171d9fc;
+  };
 };
