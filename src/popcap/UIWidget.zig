@@ -8,7 +8,7 @@ pub const UIWidget = extern struct {
 
   pub const offsets = struct {
     pub const ctor = 0x00f382e8; // UIWidget::UIWidget
-    pub const alloc   = 0x00f365f4; // new UIWidget() or UIWidget->Alloc
+    pub const new   = 0x00f365f4; // new UIWidget() or UIWidget->new
     pub const s_GetType   = 0x00f36534; // UIWidget->s_GetType
 
     pub const GetType = 0x00f36594; // UIWidget::GetType

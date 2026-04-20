@@ -1,17 +1,18 @@
-const RtObject = @import("RtObject.zig");
+pub const RtClass = extern struct {
+  pub const SIZE = 0x48;
 
-const RtClass = extern struct { // size 0x48
-  vtable: *const RtClassVTable,
-};
+  vtable: *const VTable, // offset 0x00
+  _padding: [SIZE - 8]u8, // offset 0x08
 
-const RtClassVTable = struct {
-  GetType: *const fn (*anyopaque) callconv(.c) *RtClass,
-  Func1: *const fn (*anyopaque) callconv(.c) void,
-  Func2: *const fn (*anyopaque) callconv(.c) void,
-  Func3: *const fn (*anyopaque) callconv(.c) void,
-  Func4: *const fn (*anyopaque) callconv(.c) void,
-  Func5: *const fn (*anyopaque) callconv(.c) void,
-  Func6: *const fn (*anyopaque) callconv(.c) void,
-  Func7: *const fn (*anyopaque) callconv(.c) void,
-  Func8: *const fn (*anyopaque) callconv(.c) void,
+  pub const offsets = struct {
+    pub const ctor = 0x00f382e8; // RtClass::RtClass
+    pub const new   = 0x02349248; // new RtClass() or RtClass->new
+    pub const t_GetType = 0x02349434; // RtClass::t_GetType
+
+    pub const GetType = 0x02349364; // RtClass::GetType
+  };
+
+  pub const VTable = extern struct {
+    GetType: *const fn (*anyopaque) callconv(.c) *RtClass,
+  };
 };
