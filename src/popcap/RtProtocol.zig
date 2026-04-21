@@ -1,25 +1,23 @@
 const RtClass = @import("RtClass.zig");
 
-pub const RtObject = extern struct {
+pub const RtProtocol = extern struct {
   pub const SIZE = 0x8;
 
   vtable: *const VTable, // offset 0x00
 
   pub const offsets = struct {
-    pub const ctor      = 0x012abf00; // RtObject::RtObject
-    pub const new       = 0x00f365f4; // new RtObject() or RtObject->new
-    pub const s_GetType = 0x02349160; // RtObject::s_GetType
+    pub const ctor      = 0x0234a220; // RtProtocol::RtProtocol
+    pub const new       = 0x0234a220; // new RtProtocol() or RtProtocol->new
 
     // VTable Function Addr
-    pub const GetType   = 0x023491d4; // RtObject::GetType
-    pub const Func1     = 0x02349290; // RtObject::Func1
+    pub const GetType   = 0x0234a144; // RtProtocol::GetType
+    pub const t_GetType = 0x0234a21c; // RtProtocol::t_GetType
+    pub const Func1     = 0x02349290; // RtProtocol::Func1
     pub const Dtor      = 0x0234a24c; // RtObject::~RtObject
     pub const Destroy   = 0x02df5028; // RtObject::Destroy
     pub const IsTypeOf  = 0x02349298; // RtObject::IsTypeOf
     pub const Func5     = 0x023492cc; // RtObject::Func5
     pub const Serialize = 0x023492d4; // RtObject::Serialize
-
-    pub const Dat1      = 0x02d53bd8; // RtObject::Dat1
   };
 
   pub const VTable = extern struct {
