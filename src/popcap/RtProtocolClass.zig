@@ -1,4 +1,6 @@
-pub const RtClass = extern struct {
+const RtClass = @import("RtClass.zig");
+
+pub const RtProtocol = extern struct {
   pub const SIZE = 0x48;
 
   vtable: *const VTable,    // offset 0x00
@@ -9,14 +11,13 @@ pub const RtClass = extern struct {
 
   pub const offsets = struct {
     pub const ctor      = 0x00f382e8; // RtClass::RtClass
-    pub const new       = 0x02349248; // new RtClass() or RtClass->new
+    pub const new       = 0x0234a0f0; // new RtClass() or RtClass->new
 
     // VTable Function Addr
-    pub const GetType       = 0x02349364; // RtClass::GetType
-    pub const t_GetType     = 0x02349434; // RtClass::t_GetType
-    pub const Func1         = 0x023494e0; // RtClass::Func1
+    pub const GetType       = 0x0234a078; // RtProtocol::GetType
+    pub const Func1         = 0x0234a13c; // RtProtocol::Func1
     pub const Dtor          = 0x0234a254; // RtClass::~RtClass
-    pub const Destroy       = 0x0234989c; // RtClass::Destroy
+    pub const Destroy       = 0x0234a2fc; // RtProtocol::Destroy
     pub const IsTypeOf      = 0x02349298; // RtObject::IsTypeOf
     pub const Func5         = 0x023492cc; // RtObject::Func5
     pub const Serialize     = 0x02349f7c; // RtClass::Serialize
