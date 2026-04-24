@@ -11,6 +11,7 @@ pub const TestMod = struct {
   pub var originalDoStateChange: ?*anyopaque = null;
   pub var ogHandleTouchEnded: ?*anyopaque = null;
   pub var ogHandleEndOfLevel: ?*anyopaque = null;
+  pub var ogExitZenGardenHook: ?*anyopaque = null;
 
   pub fn initHooks() void {
     log.info("Registering SDK Hooks...", .{});
@@ -21,6 +22,7 @@ pub const TestMod = struct {
 
     HookUtil.hookFunction(GameStateMgr.offsets.handleEndOfLevel, &handleEndOfLevelHook, &ogHandleEndOfLevel);
     HookUtil.hookFunction(GameStateMgr.offsets.DoStateChange, &doStateChangeHook, &originalDoStateChange);
+    HookUtil.hookFunction(GameStateMgr.offsets.ExitZenGarden, &exitZenGardenHook, &ogExitZenGardenHook);
   }
 
   ///
@@ -57,7 +59,7 @@ pub const TestMod = struct {
     p8: u64
   ) callconv(.c) void {
     log.info("called GameStateMgr::doStateChangeHook({d}, {d}, {d}, {d}, {d}, {d}, {d})", .{p2, p3, p4, p5, p6, p7, p8});
-    self.DoStateChange(originalDoStateChange, p2, p3, p4, p5, p6, p7, p8);
+    GameStateMgr.DoStateChange(originalDoStateChange, self, p2, p3, p4, p5, p6, p7, p8);
   }
 
   /// State End Of Level Hook
@@ -81,5 +83,27 @@ pub const TestMod = struct {
   ) callconv(.c) void {
     log.info("called GameStateMgr::ShandleEndOfLevelHook called!", .{});
     GameStateMgr.handleEndOfLevel(ogHandleEndOfLevel, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16);
+  }
+
+  fn exitZenGardenHook(
+    p1: Vec128,
+    p2: Vec128,
+    p3: u64,
+    p4: u64,
+    p5: u64,
+    p6: u64,
+    p7: u64,
+    p8: u64,
+    p9: isize,
+    p10: u32,
+    p11: usize,
+    p12: u64,
+    p13: **usize,
+    p14: u64,
+    p15: *anyopaque,
+    p16: u64
+  ) callconv(.c) void {
+    log.info("called GameStateMgr::ExitZenGarden called!", .{});
+    GameStateMgr.ExitZenGarden(ogExitZenGardenHook, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16);
   }
 };
