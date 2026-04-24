@@ -1,22 +1,15 @@
-const std = @import("std");
 const log = @import("log.zig");
 const sh = @cImport({
   @cInclude("shadowhook.h");
 });
 const HookUtil = @import("hookUtil.zig");
-const GameStateMgr = @import("popcap/GameStateMgr.zig").GameStateMgr;
-const Zombie = @import("popcap/Zombie.zig").Zombie;
 
 pub const LIB_TAG = "PVZ2_MOD";
 
-export fn mod_main() callconv(.c) void {}
-export const initArrayPtr: *const fn () callconv(.c) void linksection(".init_array") = &mod_main;
+export fn mod_main() callconv(.c) void {
 
-pub var originalDoStateChange: ?*anyopaque = null;
-fn doStateChangeHook(self: *GameStateMgr, param2: u32, p3: u64, p4: u64, p5: u64, p6: u64, p7: u64, p8: u64) callconv(.c) void {
-  log.info("State Change Detected! New State: {d} {d} {d} {d} {d} {d} {d}", .{param2, p3, p4, p5, p6, p7, p8});
-  self.DoStateChange(originalDoStateChange, param2, p3, p4, p5, p6, p7, p8);
 }
+export const initArrayPtr: *const fn () callconv(.c) void linksection(".init_array") = &mod_main;
 
 export fn JNI_OnLoad(vm: *anyopaque, _: *anyopaque) callconv(.c) i32 {
   _ = vm;
@@ -35,7 +28,9 @@ export fn JNI_OnLoad(vm: *anyopaque, _: *anyopaque) callconv(.c) i32 {
   _ = sh.dl_iterate_phdr(@ptrCast(&HookUtil.dl_callback), null);
   if (HookUtil.pvz2_base != 0) {
     log.info("FOUND LIB! Base: 0x{X}", .{HookUtil.pvz2_base});
-    HookUtil.hookFunction(GameStateMgr.offsets.DoStateChange,&doStateChangeHook,&originalDoStateChange);
+
+    // Import Test Mod for testing ofc
+    @import("TestMod.zig").TestMod.initHooks();
   }
   else {
     log.err("Could not locate libPVZ2.so base address.", .{});
