@@ -1,7 +1,11 @@
+const std = @import("std");
 const log = @import("log.zig");
 const HookUtil = @import("hookUtil.zig");
 const GameStateMgr = @import("popcap/GameStateMgr.zig").GameStateMgr;
 const WorldMap = @import("popcap/WorldMap.zig").WorldMap;
+const BadObject = @import("BadObject.zig").BadObject;
+const RtObject = @import("popcap/RTTI.zig").RtObject;
+const RtClass = @import("popcap/RTTI.zig").RtClass;
 
 pub const Vec128 = extern struct {
   data: [16]u8,
@@ -13,8 +17,36 @@ pub const TestMod = struct {
   pub var ogHandleEndOfLevel: ?*anyopaque = null;
   pub var ogExitZenGardenHook: ?*anyopaque = null;
 
+  pub fn init() void {
+    initClasses();
+    initHooks();
+  }
+
+  pub fn initClasses() void {
+    log.info("Registering Classes...", .{});
+
+    BadObject.init();
+
+    const myObj = BadObject.new();
+    log.info("new BadObject created at 0x{X} and data 0x{X}", .{@intFromPtr(myObj), myObj.data});
+    _ = checkObj(myObj);
+  }
+
+  pub fn checkObj(obj: *BadObject) bool {
+    const object_ptr = @as(*RtObject, @ptrCast(obj));
+
+    const vtable = object_ptr.vtable;
+    const isBadObj = vtable.IsTypeOf(object_ptr, BadObject.BadObject_Def.?);
+    const isRtObj = vtable.IsTypeOf(object_ptr, RtObject.getGlobalDef());
+
+    log.info("IsTypeOf(BadObject): {}", .{isBadObj});
+    log.info("IsTypeOf(RtObject): {}", .{isRtObj});
+
+    return isBadObj;
+  }
+
   pub fn initHooks() void {
-    log.info("Registering SDK Hooks...", .{});
+    log.info("Registering Hooks...", .{});
 
     //HookUtil.hookFunction(PvZ2Debug.offsets.Log, &pvz2LogHook, &originalLog);
 
@@ -23,9 +55,17 @@ pub const TestMod = struct {
     HookUtil.hookFunction(GameStateMgr.offsets.handleEndOfLevel, &handleEndOfLevelHook, &ogHandleEndOfLevel);
     HookUtil.hookFunction(GameStateMgr.offsets.DoStateChange, &doStateChangeHook, &originalDoStateChange);
     HookUtil.hookFunction(GameStateMgr.offsets.ExitZenGarden, &exitZenGardenHook, &ogExitZenGardenHook);
+
+    // const Class_Def = HookUtil.getDat(0x02dc7ce0);
+    // if (Class_Def != 0) {
+    //   log.info("RtObject_Def = 0x{X}", .{Class_Def});
+    //
+    //   const namePtr = @as(*u64, @ptrFromInt(Class_Def + 8)).*;
+    //   const name = std.mem.span(@as([*c]const u8, @ptrFromInt(namePtr)));
+    //   log.info("Class found: {s}", .{name});
+    // }
   }
 
-  ///
   fn handleTouchEndedHook(
     p1: Vec128,
     p2: Vec128,

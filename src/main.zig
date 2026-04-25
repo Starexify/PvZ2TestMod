@@ -1,18 +1,16 @@
+const HookUtil = @import("hookUtil.zig");
 const log = @import("log.zig");
 const sh = @cImport({
   @cInclude("shadowhook.h");
 });
-const HookUtil = @import("hookUtil.zig");
 
 pub const LIB_TAG = "PVZ2_MOD";
 
 export fn mod_main() callconv(.c) void {
-
 }
 export const initArrayPtr: *const fn () callconv(.c) void linksection(".init_array") = &mod_main;
 
-export fn JNI_OnLoad(vm: *anyopaque, _: *anyopaque) callconv(.c) i32 {
-  _ = vm;
+export fn JNI_OnLoad(_: *anyopaque, _: *anyopaque) callconv(.c) i32 {
   // _ = __android_log_print(ANDROID_LOG_INFO, LIB_TAG, "JNI OnLoad");
 
   // Initialize ShadowHook
@@ -30,7 +28,8 @@ export fn JNI_OnLoad(vm: *anyopaque, _: *anyopaque) callconv(.c) i32 {
     log.info("FOUND LIB! Base: 0x{X}", .{HookUtil.pvz2_base});
 
     // Import Test Mod for testing ofc
-    @import("TestMod.zig").TestMod.initHooks();
+    const mod = @import("TestMod.zig").TestMod;
+    mod.init();
   }
   else {
     log.err("Could not locate libPVZ2.so base address.", .{});
