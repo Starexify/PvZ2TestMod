@@ -29,20 +29,21 @@ pub const TestMod = struct {
 
     const myObj = BadObject.new();
     log.info("new BadObject created at 0x{X} and data 0x{X}", .{@intFromPtr(myObj), myObj.data});
-    _ = checkObj(myObj);
+    checkObj(myObj);
   }
 
-  pub fn checkObj(obj: *BadObject) bool {
+  pub fn checkObj(obj: *BadObject) void {
     const object_ptr = @as(*RtObject, @ptrCast(obj));
+    const plantPtr = @as(*const RtClass, @ptrFromInt(HookUtil.pvz2_base + 0x02d5b218));
 
     const vtable = object_ptr.vtable;
     const isBadObj = vtable.IsTypeOf(object_ptr, BadObject.BadObject_Def.?);
     const isRtObj = vtable.IsTypeOf(object_ptr, RtObject.getGlobalDef());
+    const isPlant = vtable.IsTypeOf(object_ptr, plantPtr);
 
     log.info("IsTypeOf(BadObject): {}", .{isBadObj});
     log.info("IsTypeOf(RtObject): {}", .{isRtObj});
-
-    return isBadObj;
+    log.info("IsTypeOf(Plant): {}", .{isPlant});
   }
 
   pub fn initHooks() void {
