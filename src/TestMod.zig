@@ -25,11 +25,11 @@ pub const TestMod = struct {
   pub fn initClasses() void {
     log.info("Registering Classes...", .{});
 
-    BadObject.init();
-
-    const myObj = BadObject.new();
-    log.info("new BadObject created at 0x{X} and data 0x{X}", .{@intFromPtr(myObj), myObj.data});
-    checkObj(myObj);
+    // BadObject.init();
+    //
+    // const myObj = BadObject.new();
+    // log.info("new BadObject created at 0x{X} and data 0x{X}", .{@intFromPtr(myObj), myObj.data});
+    // checkObj(myObj);
   }
 
   pub fn checkObj(obj: *BadObject) void {
@@ -51,11 +51,11 @@ pub const TestMod = struct {
 
     //HookUtil.hookFunction(PvZ2Debug.offsets.Log, &pvz2LogHook, &originalLog);
 
-    HookUtil.hookFunction(WorldMap.offsets.handleTouchEnded, &handleTouchEndedHook, &ogHandleTouchEnded);
-
-    HookUtil.hookFunction(GameStateMgr.offsets.handleEndOfLevel, &handleEndOfLevelHook, &ogHandleEndOfLevel);
-    HookUtil.hookFunction(GameStateMgr.offsets.DoStateChange, &doStateChangeHook, &originalDoStateChange);
-    HookUtil.hookFunction(GameStateMgr.offsets.ExitZenGarden, &exitZenGardenHook, &ogExitZenGardenHook);
+    // HookUtil.hookFunction(WorldMap.offsets.handleTouchEnded, &handleTouchEndedHook, &ogHandleTouchEnded);
+    //
+    // HookUtil.hookFunction(GameStateMgr.offsets.handleEndOfLevel, &handleEndOfLevelHook, &ogHandleEndOfLevel);
+    // HookUtil.hookFunction(GameStateMgr.offsets.DoStateChange, &doStateChangeHook, &originalDoStateChange);
+    // HookUtil.hookFunction(GameStateMgr.offsets.ExitZenGarden, &exitZenGardenHook, &ogExitZenGardenHook);
 
     // const Class_Def = HookUtil.getDat(0x02dc7ce0);
     // if (Class_Def != 0) {

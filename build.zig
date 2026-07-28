@@ -2,12 +2,13 @@ const std = @import("std");
 
 /// Custom Paths.
 /// These should be changed on different setups!!
+const PVZ2_VERSION = "13.1.1";
 const MOD_TAG = "PVZ2_MOD";
 const HOME_PATH = "/home/ImVeryBad/";
 const NDK_PATH = HOME_PATH ++ "ToolKits/Android NDK/android-ndk-r27d";
 const ANDROID_PKG = "com.ea.game.pvz2_bad";
-const APK_PATH = "com.ea.game.pvz2_bad_13.0.1-1042_minAPI24(arm64-v8a,armeabi-v7a)(nodpi)";
-const APK_DECOMP_PATH = HOME_PATH ++ "Modding/PvZ2/13.0.1/" ++ APK_PATH;
+const APK_PATH = "com.ea.game.pvz2_bad_" ++ PVZ2_VERSION ++ "-1045_minAPI24(arm64-v8a,armeabi-v7a)(nodpi)";
+const APK_DECOMP_PATH = HOME_PATH ++ "Modding/PvZ2/" ++ PVZ2_VERSION ++  "/" ++ APK_PATH;
 
 /// Android NDK
 const ANDROID_API = 35;

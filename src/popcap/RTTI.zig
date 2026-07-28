@@ -16,8 +16,8 @@ pub const RtObject = extern struct {
   };
 
   pub const offsets = struct {
-    pub const RtObject_Def = 0x02dc7bd0;
-    pub const VTable       = 0x02c53b38;
+    pub const RtObject_Def = 0x02ed9bc0;
+    pub const VTable       = 0x02d65a38;
   };
 
   pub fn getGlobalDef() *const RtClass {
